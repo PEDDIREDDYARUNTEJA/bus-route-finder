@@ -71,13 +71,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'bus_project.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+# Vercel Serverless Read-Only Filesystem Fixes:
+# 1. Store session data in signed browser cookies to eliminate database session writes during login
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+
+# 2. Use writable /tmp directory for SQLite database when executing on Vercel
+import os, shutil
+
+DB_PATH = BASE_DIR / 'db.sqlite3'
+if os.environ.get('VERCEL'):
+    TMP_DB_PATH = Path('/tmp/db.sqlite3')
+    if not TMP_DB_PATH.exists() and DB_PATH.exists():
+        shutil.copy2(DB_PATH, TMP_DB_PATH)
+    DB_PATH = TMP_DB_PATH
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_PATH,
     }
 }
 
