@@ -1,0 +1,105 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Stops | Admin Dashboard</title>
+    <link rel="stylesheet" href="{% static 'bus_finder/css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="navbar">
+        <a href="{% url 'bus_finder:admin_dashboard' %}" class="brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-bus"></i>
+            </div>
+            <span>RouteFinder Admin</span>
+        </a>
+        <div class="nav-links">
+            <a href="{% url 'bus_finder:admin_dashboard' %}" class="btn-admin">
+                <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Messages Toast -->
+        {% if messages %}
+            <div style="margin-bottom: 1.5rem;">
+                {% for message in messages %}
+                    <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 1rem 1.25rem; border-radius: 10px; font-weight: 600;">
+                        <i class="fa-solid fa-circle-check"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <section style="margin-bottom: 2rem;">
+            <h1 class="hero-title" style="text-align: left; font-size: 2.2rem; margin: 0;">Bus Stop Management</h1>
+            <p style="color: #cbd5e1; margin-top: 4px;">Add new transit stops to the system database or delete unused locations.</p>
+        </section>
+
+        <div style="display: grid; grid-template-columns: 320px 1fr; gap: 2rem;">
+            
+            <!-- Add Stop Card -->
+            <div class="search-card" style="padding: 1.75rem; height: fit-content;">
+                <h3 style="font-size: 1.2rem; font-weight: 700; color: #0f172a; margin-bottom: 1.25rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">
+                    <i class="fa-solid fa-location-plus" style="color: var(--primary);"></i> Add New Stop
+                </h3>
+
+                <form method="POST" action="{% url 'bus_finder:stop_manage' %}">
+                    {% csrf_token %}
+                    
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label class="form-label">Stop Name <span style="color: red;">*</span></label>
+                        {{ form.name }}
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label class="form-label">Short Code (Optional)</label>
+                        {{ form.code }}
+                    </div>
+
+                    <button type="submit" class="btn-search" style="width: 100%;">
+                        <i class="fa-solid fa-plus"></i> Save Stop
+                    </button>
+                </form>
+            </div>
+
+            <!-- Existing Stops List Grid -->
+            <div class="search-card" style="padding: 1.75rem;">
+                <h3 style="font-size: 1.2rem; font-weight: 700; color: #0f172a; margin-bottom: 1.25rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">
+                    <i class="fa-solid fa-map-pin" style="color: var(--primary);"></i> Configured Bus Stops ({{ stops|length }})
+                </h3>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                    {% for stop in stops %}
+                        <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 0.85rem 1rem; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem;">{{ stop.name }}</div>
+                                {% if stop.code %}
+                                    <div style="font-size: 0.78rem; color: #64748b;">Code: {{ stop.code }}</div>
+                                {% endif %}
+                            </div>
+                            <a href="{% url 'bus_finder:stop_delete' stop.id %}" onclick="return confirm('Delete stop {{ stop.name }}?');" style="color: #ef4444; font-size: 0.9rem; padding: 4px 8px; border-radius: 4px; transition: background 0.15s ease;" title="Delete Stop">
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
+                        </div>
+                    {% empty %}
+                        <div style="grid-column: 1 / -1; text-align: center; color: #64748b; padding: 2rem;">
+                            No stops configured. Add one using the form on the left.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Number & Route Finder | City Transit Guide</title>
+    <link rel="stylesheet" href="{% static 'bus_finder/css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="navbar">
+        <a href="{% url 'bus_finder:home' %}" class="brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-bus"></i>
+            </div>
+            <span>RouteFinder</span>
+        </a>
+        <div class="nav-links">
+            <a href="{% url 'bus_finder:admin_login' %}" class="btn-admin">
+                <i class="fa-solid fa-user-shield"></i> Admin Login
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Hero Header -->
+        <section class="hero-header">
+            <h1 class="hero-title">Find Your City Bus Route</h1>
+            <p class="hero-subtitle">Select your source and destination to discover available bus numbers, route stops, and schedule timings.</p>
+        </section>
+
+        <!-- Search Form Card -->
+        <section class="search-card">
+            <form action="{% url 'bus_finder:home' %}" method="GET" id="search-form" class="search-form">
+                
+                <!-- Source Select -->
+                <div class="form-group">
+                    <label for="source-select" class="form-label">
+                        <i class="fa-solid fa-location-dot"></i> Starting Location (Source)
+                    </label>
+                    <div class="select-wrapper">
+                        <select name="source" id="source-select" class="form-select" required>
+                            <option value="" disabled {% if not selected_source %}selected{% endif %}>Select Source Stop...</option>
+                            {% for stop in stops %}
+                                <option value="{{ stop.id }}" {% if selected_source and selected_source.id == stop.id %}selected{% endif %}>
+                                    {{ stop.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Swap Button -->
+                <button type="button" id="swap-btn" class="btn-swap" title="Swap Source & Destination">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                </button>
+
+                <!-- Destination Select -->
+                <div class="form-group">
+                    <label for="dest-select" class="form-label">
+                        <i class="fa-solid fa-flag-checkered"></i> Destination Location
+                    </label>
+                    <div class="select-wrapper">
+                        <select name="destination" id="dest-select" class="form-select" required>
+                            <option value="" disabled {% if not selected_dest %}selected{% endif %}>Select Destination Stop...</option>
+                            {% for stop in stops %}
+                                <option value="{{ stop.id }}" {% if selected_dest and selected_dest.id == stop.id %}selected{% endif %}>
+                                    {{ stop.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Search CTA -->
+                <button type="submit" class="btn-search">
+                    <i class="fa-solid fa-magnifying-glass"></i> Find Buses
+                </button>
+
+            </form>
+        </section>
+
+        <!-- Results Section -->
+        {% if searched %}
+            <section class="results-section">
+                <div class="results-header">
+                    <h2 class="results-title">
+                        Available Buses: <span style="color: #38bdf8;">{{ selected_source.name }}</span> 
+                        <i class="fa-solid fa-arrow-right" style="font-size: 1rem; margin: 0 6px;"></i> 
+                        <span style="color: #38bdf8;">{{ selected_dest.name }}</span>
+                    </h2>
+                    <span class="results-count">Found {{ results|length }} Bus Line{% if results|length != 1 %}s{% endif %}</span>
+                </div>
+
+                {% if results %}
+                    {% for bus in results %}
+                        <article class="bus-card">
+                            <div class="bus-card-header">
+                                <div class="bus-badge-group">
+                                    <div class="bus-number-badge">
+                                        <i class="fa-solid fa-bus-simple" style="margin-right: 6px; font-size: 1.1rem;"></i>
+                                        Bus {{ bus.bus_number }}
+                                    </div>
+                                    <div>
+                                        <div class="bus-route-title">{{ bus.route_name }}</div>
+                                        <div style="font-size: 0.85rem; color: #64748b; margin-top: 2px;">
+                                            <i class="fa-solid fa-route"></i> {{ bus.num_stops_between }} stop{% if bus.num_stops_between != 1 %}s{% endif %} between {{ bus.source_stop }} & {{ bus.dest_stop }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bus-timing-pills">
+                                    <div class="timing-pill first-bus" title="First Bus Schedule">
+                                        <i class="fa-solid fa-clock"></i> First Bus: <strong>{{ bus.first_bus_time }}</strong>
+                                    </div>
+                                    <div class="timing-pill last-bus" title="Last Bus Schedule">
+                                        <i class="fa-solid fa-moon"></i> Last Bus: <strong>{{ bus.last_bus_time }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Route Stepper Timeline -->
+                            <div class="route-timeline-container">
+                                <div class="timeline-title">
+                                    <i class="fa-solid fa-timeline"></i> Complete Route Progression
+                                </div>
+                                <div class="route-stepper">
+                                    {% for stop in bus.stops %}
+                                        <div class="stop-node {% if stop.is_source %}is-source{% elif stop.is_dest %}is-dest{% elif stop.is_in_segment %}in-segment{% endif %}">
+                                            <div class="stop-circle">
+                                                {% if stop.is_source %}
+                                                    <i class="fa-solid fa-play"></i>
+                                                {% elif stop.is_dest %}
+                                                    <i class="fa-solid fa-location-dot"></i>
+                                                {% else %}
+                                                    {{ stop.stop_order }}
+                                                {% endif %}
+                                            </div>
+                                            <div class="stop-line"></div>
+                                            <div class="stop-label">{{ stop.stop_name }}</div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                {% else %}
+                    <!-- No Buses Found -->
+                    <div class="no-results-card">
+                        <div class="no-results-icon">
+                            <i class="fa-solid fa-bus-slash" style="color: #ef4444;"></i>
+                        </div>
+                        <h3 class="no-results-title">No Direct Buses Available</h3>
+                        <p class="no-results-desc">
+                            We couldn't find any active direct bus routes going from <strong>{{ selected_source.name }}</strong> to <strong>{{ selected_dest.name }}</strong> in that direction. Try reversing your direction or choosing nearby stops.
+                        </p>
+                    </div>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <!-- Quick Admin Tip Banner -->
+        <section class="admin-info-banner">
+            <div class="admin-info-text">
+                <h4><i class="fa-solid fa-user-gear"></i> Admin Management Dashboard</h4>
+                <p>Log in with username <strong>admin</strong> and password <strong>admin123</strong> to easily add bus numbers, set stop sequences, and update operating schedules.</p>
+            </div>
+            <a href="{% url 'bus_finder:admin_login' %}" class="btn-admin" style="background: var(--primary); border: none;">
+                Open Admin Login <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </section>
+
+    </main>
+
+    <script src="{% static 'bus_finder/js/main.js' %}"></script>
+</body>
+</html>

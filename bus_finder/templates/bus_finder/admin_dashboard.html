@@ -1,0 +1,184 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Bus Route Finder</title>
+    <link rel="stylesheet" href="{% static 'bus_finder/css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="navbar">
+        <a href="{% url 'bus_finder:home' %}" class="brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-bus"></i>
+            </div>
+            <span>RouteFinder Admin</span>
+        </a>
+        <div class="nav-links">
+            <a href="{% url 'bus_finder:home' %}" class="btn-admin">
+                <i class="fa-solid fa-house"></i> Public Site
+            </a>
+            <a href="{% url 'bus_finder:stop_manage' %}" class="btn-admin" style="background: rgba(6, 182, 212, 0.2); border-color: #06b6d4;">
+                <i class="fa-solid fa-map-location-dot"></i> Manage Stops
+            </a>
+            <a href="{% url 'bus_finder:admin_logout' %}" class="btn-admin" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5;">
+                <i class="fa-solid fa-right-from-bracket"></i> Log Out
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Messages Toast -->
+        {% if messages %}
+            <div style="margin-bottom: 1.5rem;">
+                {% for message in messages %}
+                    <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 1rem 1.25rem; border-radius: 10px; font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fa-solid fa-circle-check"></i> {{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Dashboard Header & Stats -->
+        <section style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+            <div>
+                <h1 class="hero-title" style="text-align: left; font-size: 2.2rem; margin: 0;">Admin Bus Dashboard</h1>
+                <p style="color: #cbd5e1; margin-top: 4px;">Manage bus numbers, stop route sequences, and operational schedules.</p>
+            </div>
+            <a href="{% url 'bus_finder:bus_add' %}" class="btn-search" style="height: 48px; font-size: 0.95rem; text-decoration: none;">
+                <i class="fa-solid fa-plus"></i> Add New Bus Line
+            </a>
+        </section>
+
+        <!-- Stats Cards Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
+            <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 14px; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 50px; height: 50px; background: #e0e7ff; color: #4338ca; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    <i class="fa-solid fa-bus"></i>
+                </div>
+                <div>
+                    <div style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">{{ total_buses }}</div>
+                    <div style="font-size: 0.88rem; color: #64748b; font-weight: 600;">Total Bus Lines</div>
+                </div>
+            </div>
+
+            <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 14px; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 50px; height: 50px; background: #dcfce7; color: #15803d; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div>
+                    <div style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">{{ active_buses }}</div>
+                    <div style="font-size: 0.88rem; color: #64748b; font-weight: 600;">Active Operating Buses</div>
+                </div>
+            </div>
+
+            <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 14px; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 50px; height: 50px; background: #e0f2fe; color: #0369a1; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    <i class="fa-solid fa-location-dot"></i>
+                </div>
+                <div>
+                    <div style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">{{ total_stops }}</div>
+                    <div style="font-size: 0.88rem; color: #64748b; font-weight: 600;">Configured Bus Stops</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bus Management Table Card -->
+        <section class="search-card" style="padding: 1.75rem;">
+            
+            <!-- Table Filter Bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.3rem; font-weight: 700; color: #0f172a;">Bus Directory</h3>
+                <form action="{% url 'bus_finder:admin_dashboard' %}" method="GET" style="display: flex; gap: 0.5rem; width: 100%; max-width: 400px;">
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search by bus number or stop..." class="form-select" style="padding: 0.6rem 1rem; font-size: 0.9rem;">
+                    <button type="submit" class="btn-search" style="height: 42px; padding: 0 1.25rem; font-size: 0.9rem;">Search</button>
+                    {% if search_query %}
+                        <a href="{% url 'bus_finder:admin_dashboard' %}" class="btn-swap" style="width: 42px; height: 42px; border-radius: 10px; font-size: 0.9rem;" title="Clear Filter">✕</a>
+                    {% endif %}
+                </form>
+            </div>
+
+            <!-- Table -->
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e2e8f0; color: #64748b; font-weight: 700;">
+                            <th style="padding: 1rem 0.75rem;">Bus No</th>
+                            <th style="padding: 1rem 0.75rem;">Route Summary & Sequence</th>
+                            <th style="padding: 1rem 0.75rem;">First Bus</th>
+                            <th style="padding: 1rem 0.75rem;">Last Bus</th>
+                            <th style="padding: 1rem 0.75rem;">Stops</th>
+                            <th style="padding: 1rem 0.75rem;">Status</th>
+                            <th style="padding: 1rem 0.75rem; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bus in buses %}
+                            <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                <td style="padding: 1rem 0.75rem; font-weight: 800;">
+                                    <span style="background: #3b82f6; color: #fff; padding: 0.35rem 0.85rem; border-radius: 8px; font-size: 0.95rem;">
+                                        Bus {{ bus.bus_number }}
+                                    </span>
+                                </td>
+                                <td style="padding: 1rem 0.75rem; max-width: 320px;">
+                                    <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">{{ bus.route_name }}</div>
+                                    <div style="font-size: 0.8rem; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        {{ bus.get_route_display }}
+                                    </div>
+                                </td>
+                                <td style="padding: 1rem 0.75rem; font-weight: 600; color: #166534;">
+                                    {{ bus.get_formatted_first_bus|default:"N/A" }}
+                                </td>
+                                <td style="padding: 1rem 0.75rem; font-weight: 600; color: #9f1239;">
+                                    {{ bus.get_formatted_last_bus|default:"N/A" }}
+                                </td>
+                                <td style="padding: 1rem 0.75rem;">
+                                    <span style="background: #e2e8f0; color: #334155; padding: 0.25rem 0.6rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem;">
+                                        {{ bus.get_stops_sequence|length }} Stops
+                                    </span>
+                                </td>
+                                <td style="padding: 1rem 0.75rem;">
+                                    {% if bus.is_active %}
+                                        <span style="background: #dcfce7; color: #166534; padding: 0.25rem 0.65rem; border-radius: 20px; font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
+                                            <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Active
+                                        </span>
+                                    {% else %}
+                                        <span style="background: #f1f5f9; color: #64748b; padding: 0.25rem 0.65rem; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">
+                                            Inactive
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 1rem 0.75rem; text-align: right;">
+                                    <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                                        <a href="{% url 'bus_finder:bus_edit' bus.id %}" style="background: #3b82f6; color: #fff; padding: 0.45rem 0.85rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.85rem;" title="Edit Bus">
+                                            <i class="fa-solid fa-pen"></i> Edit
+                                        </a>
+                                        <a href="{% url 'bus_finder:bus_delete' bus.id %}" onclick="return confirm('Are you sure you want to delete Bus {{ bus.bus_number }}?');" style="background: #ef4444; color: #fff; padding: 0.45rem 0.85rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.85rem;" title="Delete Bus">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 3rem 1rem; color: #64748b;">
+                                    <i class="fa-solid fa-bus" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                                    No buses found. Click "Add New Bus Line" above to create one.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+    </main>
+
+</body>
+</html>

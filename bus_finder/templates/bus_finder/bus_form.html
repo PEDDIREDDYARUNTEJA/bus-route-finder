@@ -1,0 +1,215 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} | Admin Dashboard</title>
+    <link rel="stylesheet" href="{% static 'bus_finder/css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+        }
+        .stop-seq-item {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="navbar">
+        <a href="{% url 'bus_finder:admin_dashboard' %}" class="brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-bus"></i>
+            </div>
+            <span>RouteFinder Admin</span>
+        </a>
+        <div class="nav-links">
+            <a href="{% url 'bus_finder:admin_dashboard' %}" class="btn-admin">
+                <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </header>
+
+    <main class="container" style="max-width: 850px;">
+
+        <section style="margin-bottom: 2rem;">
+            <h1 class="hero-title" style="text-align: left; font-size: 2.2rem; margin: 0;">{{ page_title }}</h1>
+            <p style="color: #cbd5e1; margin-top: 4px;">Fill in the bus line schedule details and configure its ordered stop sequence.</p>
+        </section>
+
+        <form method="POST" id="bus-main-form" class="search-card" style="padding: 2.25rem;">
+            {% csrf_token %}
+
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: #0f172a; margin-bottom: 1.25rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">
+                <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> 1. Basic Bus Information
+            </h3>
+
+            <div class="form-grid" style="margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label class="form-label">Bus Number <span style="color: red;">*</span></label>
+                    {{ form.bus_number }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Route Summary / Name</label>
+                    {{ form.route_name }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">First Bus Start Time</label>
+                    {{ form.first_bus_time }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Last Bus Start Time</label>
+                    {{ form.last_bus_time }}
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 2rem; flex-direction: row; align-items: center; gap: 10px;">
+                {{ form.is_active }}
+                <label for="{{ form.is_active.id_for_label }}" style="font-weight: 700; color: #0f172a; cursor: pointer;">
+                    Active Operating Service
+                </label>
+            </div>
+
+            <!-- Stop Sequence Section -->
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: #0f172a; margin-bottom: 1.25rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">
+                <i class="fa-solid fa-route" style="color: var(--primary);"></i> 2. Route Stop Sequence
+            </h3>
+            <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 1rem;">Add stops in the exact order the bus travels from start to end.</p>
+
+            <!-- Stop Add Bar -->
+            <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
+                <select id="stop-selector" class="form-select" style="flex: 1;">
+                    <option value="" disabled selected>Choose a stop to add...</option>
+                    {% for stop in all_stops %}
+                        <option value="{{ stop.id }}" data-name="{{ stop.name }}">{{ stop.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" id="btn-add-stop-seq" class="btn-search" style="height: 48px; background: #06b6d4; font-size: 0.9rem; padding: 0 1.25rem;">
+                    <i class="fa-solid fa-plus"></i> Add Stop
+                </button>
+            </div>
+
+            <!-- Sequence List Container -->
+            <div id="stop-sequence-container" style="margin-bottom: 2rem;">
+                {% if current_stops %}
+                    {% for bs in current_stops %}
+                        <div class="stop-seq-item" data-stop-id="{{ bs.stop.id }}">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span class="seq-num" style="background: var(--primary); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">
+                                    {{ bs.stop_order }}
+                                </span>
+                                <span class="stop-name" style="font-weight: 700; color: #0f172a;">{{ bs.stop.name }}</span>
+                                <input type="hidden" name="stops[]" value="{{ bs.stop.id }}">
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" class="btn-move-up btn-swap" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.8rem;" title="Move Up">▲</button>
+                                <button type="button" class="btn-move-down btn-swap" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.8rem;" title="Move Down">▼</button>
+                                <button type="button" class="btn-remove-stop btn-swap" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.8rem; background: #fee2e2; border-color: #fca5a5; color: #dc2626;" title="Remove">✕</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Form Actions -->
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; border-top: 1px solid #e2e8f0; padding-top: 1.5rem;">
+                <a href="{% url 'bus_finder:admin_dashboard' %}" class="btn-swap" style="width: auto; height: 48px; border-radius: 10px; padding: 0 1.5rem; text-decoration: none; font-weight: 600;">
+                    Cancel
+                </a>
+                <button type="submit" class="btn-search">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Bus Line
+                </button>
+            </div>
+
+        </form>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const addBtn = document.getElementById('btn-add-stop-seq');
+            const selector = document.getElementById('stop-selector');
+            const container = document.getElementById('stop-sequence-container');
+
+            function updateSequenceNumbers() {
+                const items = container.querySelectorAll('.stop-seq-item');
+                items.forEach((item, idx) => {
+                    const numBadge = item.querySelector('.seq-num');
+                    if (numBadge) numBadge.textContent = idx + 1;
+                });
+            }
+
+            addBtn.addEventListener('click', () => {
+                const selectedOption = selector.options[selector.selectedIndex];
+                const stopId = selector.value;
+                const stopName = selectedOption ? selectedOption.dataset.name : '';
+
+                if (!stopId) {
+                    alert('Please select a stop from the dropdown.');
+                    return;
+                }
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'stop-seq-item';
+                itemDiv.dataset.stopId = stopId;
+                itemDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="seq-num" style="background: var(--primary); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">1</span>
+                        <span class="stop-name" style="font-weight: 700; color: #0f172a;">${stopName}</span>
+                        <input type="hidden" name="stops[]" value="${stopId}">
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" class="btn-move-up btn-swap" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.8rem;" title="Move Up">▲</button>
+                        <button type="button" class="btn-move-down btn-swap" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.8rem;" title="Move Down">▼</button>
+                        <button type="button" class="btn-remove-stop btn-swap" style="width: 32px; height: 32px; border-radius: 6px; font-size: 0.8rem; background: #fee2e2; border-color: #fca5a5; color: #dc2626;" title="Remove">✕</button>
+                    </div>
+                `;
+
+                container.appendChild(itemDiv);
+                updateSequenceNumbers();
+                selector.value = '';
+            });
+
+            container.addEventListener('click', (e) => {
+                const item = e.target.closest('.stop-seq-item');
+                if (!item) return;
+
+                if (e.target.classList.contains('btn-remove-stop')) {
+                    item.remove();
+                    updateSequenceNumbers();
+                } else if (e.target.classList.contains('btn-move-up')) {
+                    if (item.previousElementSibling) {
+                        container.insertBefore(item, item.previousElementSibling);
+                        updateSequenceNumbers();
+                    }
+                } else if (e.target.classList.contains('btn-move-down')) {
+                    if (item.nextElementSibling) {
+                        container.insertBefore(item.nextElementSibling, item);
+                        updateSequenceNumbers();
+                    }
+                }
+            });
+
+            updateSequenceNumbers();
+        });
+    </script>
+</body>
+</html>
