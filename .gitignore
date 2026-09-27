@@ -8,10 +8,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Django static & db
-staticfiles/
-db.sqlite3
-
 # OS & Editor files
 .DS_Store
 .vscode/

@@ -1,6 +1,8 @@
-echo "Building Bus Finder project..."
+echo "Installing python dependencies..."
+python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
+
+echo "Collecting static files..."
 python3 manage.py collectstatic --noinput --clear
-python3 manage.py migrate
-python3 manage.py seed_buses
+
 echo "Build complete!"
